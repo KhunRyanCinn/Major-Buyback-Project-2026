@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAJOR Cineplex Buyback Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b14;
+  --text:#e6edf7;
+  --muted:#8b9bb4;
+  --line:rgba(148,163,184,.14);
+  --green:#34d399; --red:#f87171; --amber:#fbbf24;
+  --accent:#8b5cf6;
+  --card:linear-gradient(180deg,rgba(148,163,184,.08),rgba(148,163,184,.03));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter','Segoe UI',Tahoma,sans-serif;
+  background:
+    radial-gradient(1000px 500px at 85% -10%,rgba(139,92,246,.14),transparent 60%),
+    radial-gradient(900px 500px at -10% 30%,rgba(56,189,248,.10),transparent 60%),
+    radial-gradient(800px 600px at 50% 110%,rgba(251,146,60,.08),transparent 60%),
+    var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding:0 16px 48px;
+}
+::selection{background:rgba(139,92,246,.4)}
+::-webkit-scrollbar{width:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(148,163,184,.25);border-radius:99px}
+
+/* ===== Header ===== */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  max-width:1180px;margin:0 auto 24px;padding:14px 8px;
+  background:rgba(7,11,20,.72);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand img{height:52px;width:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+.brand-name{font-size:24px;font-weight:900;letter-spacing:2px;line-height:1.05;text-transform:uppercase;white-space:nowrap}
+.brand-name span{background:linear-gradient(90deg,#f87171,#fb923c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-tag{font-size:11px;font-weight:700;letter-spacing:5px;color:var(--muted);text-transform:uppercase;margin-top:3px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.pill{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:700;letter-spacing:1px;color:#c4b5fd;
+  background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.35);
+  padding:7px 14px;border-radius:99px;white-space:nowrap;
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}70%{box-shadow:0 0 0 8px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+
+.wrap{max-width:1180px;margin:0 auto}
+
+/* ===== Round panel ===== */
+.panel{
+  --accent:#8b5cf6;
+  position:relative;overflow:hidden;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:26px;
+  margin-bottom:28px;
+  backdrop-filter:blur(8px);
+}
+.panel::before{
+  content:'';position:absolute;inset:0 0 auto 0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+}
+.round-1{--accent:#a78bfa}
+.round-2{--accent:#fb923c}
+.round-3{--accent:#38bdf8}
+
+.panel-head{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:18px}
+.round-badge{
+  width:46px;height:46px;flex:none;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;color:#0b0f19;
+  background:linear-gradient(135deg,var(--accent),rgba(255,255,255,.85));
+  box-shadow:0 6px 18px -6px var(--accent);
+}
+.panel-title{font-size:22px;font-weight:800}
+.panel-title small{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px}
+.date-chips{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  font-size:12px;font-weight:600;color:#cbd5e1;
+  background:rgba(148,163,184,.10);border:1px solid var(--line);
+  padding:6px 12px;border-radius:99px;
+}
+.chip b{color:var(--muted);font-weight:600}
+.chip span{color:var(--accent);font-weight:700}
+
+.base-price{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:14px;font-weight:600;color:#cbd5e1;
+  background:rgba(148,163,184,.08);border:1px dashed rgba(148,163,184,.3);
+  padding:8px 14px;border-radius:12px;margin-bottom:14px;
+}
+.base-price b{color:#fff;font-weight:800;font-size:15px}
+
+/* ===== Info boxes ===== */
+.info-box{
+  border-radius:14px;padding:14px 18px;
+  font-size:14px;line-height:1.75;color:#cbd5e1;
+  margin-bottom:14px;border:1px solid var(--line);
+}
+.info-box b{color:#fff}
+.plan-box{background:rgba(59,130,246,.10);border-color:rgba(59,130,246,.30)}
+.plan-box b{color:#93c5fd}
+.day-box{background:rgba(148,163,184,.08)}
+.earn-box{background:rgba(251,191,36,.09);border-color:rgba(251,191,36,.28);color:#fde68a;margin:16px 0 0}
+.earn-box b{color:#fbbf24}
+
+/* ===== KPI cards ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:4px 0 18px}
+.kpi{
+  position:relative;overflow:hidden;
+  background:rgba(148,163,184,.06);
+  border:1px solid var(--line);border-radius:16px;
+  padding:18px 16px 16px;text-align:center;
+  transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;
+}
+.kpi:hover{transform:translateY(-4px);border-color:rgba(148,163,184,.35);box-shadow:0 16px 32px -16px rgba(0,0,0,.7)}
+.kpi::before{content:'';position:absolute;inset:0 0 auto 0;height:3px;background:var(--kpi-c,#94a3b8)}
+.kpi.up{--kpi-c:linear-gradient(90deg,#10b981,#34d399)}
+.kpi.down{--kpi-c:linear-gradient(90deg,#ef4444,#f87171)}
+.kpi.flat{--kpi-c:linear-gradient(90deg,#d97706,#fbbf24)}
+.kpi .label{font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:10px;letter-spacing:.3px}
+.kpi .value{font-size:32px;font-weight:900;font-variant-numeric:tabular-nums;margin-bottom:6px}
+.kpi.up .value{color:var(--green)} .kpi.down .value{color:var(--red)} .kpi.flat .value{color:var(--amber)}
+.kpi .sub2{font-size:13px;font-weight:700;color:#cbd5e1;background:rgba(148,163,184,.10);display:inline-block;padding:4px 12px;border-radius:99px}
+
+.up{color:var(--green)} .down{color:var(--red)} .flat{color:var(--amber)}
+
+/* ===== Chart ===== */
+.chart-shell{
+  background:rgba(2,6,23,.45);
+  border:1px solid var(--line);border-radius:16px;
+  padding:18px 14px 10px;margin-bottom:6px;
+}
+.chart-container{height:320px}
+canvas{width:100%!important;height:320px!important}
+
+/* ===== Highlights ===== */
+ul.hl{list-style:none;margin:16px 0 0;display:grid;gap:10px}
+ul.hl li{
+  position:relative;padding-left:26px;
+  font-size:14px;line-height:1.65;color:#cbd5e1;font-weight:500;
+}
+ul.hl li::before{
+  content:'';position:absolute;left:2px;top:7px;
+  width:10px;height:10px;border-radius:3px;
+  background:linear-gradient(135deg,var(--accent),rgba(255,255,255,.7));
+  box-shadow:0 0 10px -2px var(--accent);
+}
+ul.hl b{color:#fff}
+
+/* ===== Summary ===== */
+.summary{
+  background:linear-gradient(135deg,rgba(16,185,129,.14),rgba(16,185,129,.04));
+  border:1px solid rgba(52,211,153,.35);
+  border-left:5px solid var(--green);
+  border-radius:20px;padding:26px;
+}
+.summary h2{display:flex;align-items:center;gap:10px;color:#6ee7b7;font-size:21px;margin-bottom:12px}
+.summary p{line-height:1.85;font-size:15px;color:#d1fae5}
+.summary b{color:#fff}
+
+
+/* ===== %Change badge ===== */
+.chg{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:800;margin:2px 0 10px;padding:4px 12px;border-radius:99px;font-variant-numeric:tabular-nums}
+.chg small{font-weight:600;font-size:11px;opacity:.7}
+.chg.up{color:var(--green);background:rgba(52,211,153,.13)}
+.chg.down{color:var(--red);background:rgba(248,113,113,.13)}
+.chg.flat{color:var(--amber);background:rgba(251,191,36,.13)}
+
+/* ===== Theme toggle button ===== */
+.theme-btn{cursor:pointer;border:1px solid var(--line);background:rgba(148,163,184,.10);color:var(--text);font-family:inherit;font-size:13px;font-weight:700;padding:8px 15px;border-radius:99px;display:inline-flex;align-items:center;gap:7px;transition:all .25s ease}
+.theme-btn:hover{border-color:rgba(148,163,184,.45);transform:translateY(-1px)}
+
+/* ===== Light theme overrides ===== */
+body.light{--text:#0f172a;--muted:#5b6b85;--line:rgba(15,23,42,.12);--card:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.82));
+  background:radial-gradient(1000px 500px at 85% -10%,rgba(139,92,246,.10),transparent 60%),radial-gradient(900px 500px at -10% 30%,rgba(56,189,248,.10),transparent 60%),#eef2f7}
+body.light .topbar{background:rgba(255,255,255,.78)}
+body.light .pill{background:rgba(139,92,246,.10);color:#7c3aed;border-color:rgba(139,92,246,.30)}
+body.light .chip{background:rgba(15,23,42,.05);color:#334155}
+body.light .chip b{color:#64748b}
+body.light .base-price{color:#334155;background:rgba(15,23,42,.04);border-color:rgba(15,23,42,.25)}
+body.light .info-box{color:#334155;background:rgba(15,23,42,.03);border-color:rgba(15,23,42,.10)}
+body.light .info-box b{color:#0f172a}
+body.light .plan-box{background:rgba(59,130,246,.07);border-color:rgba(59,130,246,.28)}
+body.light .plan-box b{color:#1d4ed8}
+body.light .earn-box{background:rgba(251,191,36,.18);color:#92400e;border-color:rgba(217,119,6,.30)}
+body.light .earn-box b{color:#b45309}
+body.light .kpi{background:rgba(255,255,255,.9)}
+body.light .kpi .sub2{color:#334155;background:rgba(15,23,42,.06)}
+body.light .chart-shell{background:rgba(255,255,255,.72);border-color:rgba(15,23,42,.10)}
+body.light ul.hl li{color:#334155}
+body.light ul.hl b{color:#0f172a}
+body.light .summary{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.03));border-color:rgba(5,150,105,.35)}
+body.light .summary h2{color:#059669}
+body.light .summary p{color:#065f46}
+body.light .up{color:#059669}
+body.light .down{color:#dc2626}
+body.light .flat{color:#d97706}
+body.light .chg.up{color:#059669;background:rgba(5,150,105,.12)}
+body.light .chg.down{color:#dc2626;background:rgba(220,38,38,.10)}
+body.light .chg.flat{color:#d97706;background:rgba(217,119,6,.12)}
+body.light .theme-btn{background:rgba(15,23,42,.05)}
+body.light ::-webkit-scrollbar-thumb{background:rgba(15,23,42,.20)}
+
+/* ===== Reveal animation ===== */
+.reveal{animation:rise .55s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}
+
+@media (max-width:640px){
+  .brand-name{font-size:19px}
+  .brand img{height:42px}
+  .pill{display:none}
+  .date-chips{margin-left:0}
+  .panel{padding:18px}
+  .kpi .value{font-size:26px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="data:image/png;base64,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" alt="Major Cineplex Logo">
+    <div>
+      <div class="brand-name">MAJOR <span>CINEPLEX</span></div>
+      <div class="brand-tag">Group</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+    <span class="pill"><span class="dot"></span>BUYBACK DASHBOARD</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ROUND 1 -->
+<section class="panel round-1 reveal d1">
+  <div class="panel-head">
+    <div class="round-badge">1</div>
+    <div class="panel-title">รอบที่ 1<small>MAJOR Share Buyback Program</small></div>
+    <div class="date-chips">
+      <span class="chip"><b>📅 ประกาศ:</b> <span>9 ต.ค. 2566</span></span>
+      <span class="chip"><b>🏁 ครบกำหนด:</b> <span>15 ม.ค. 2567</span></span>
+    </div>
+  </div>
+
+  <div class="base-price">🏷️ ราคาปิดฐาน (วันประกาศ 9 ต.ค. 2566): <b>14.30 บาท</b></div>
+
+  <div class="info-box plan-box">
+    📋 <b>แผนโครงการ:</b> ซื้อคืนไม่เกิน 72 ล้านหุ้น | วงเงินไม่เกิน 1,000 ล้านบาท | <b>ราคาเฉลี่ยตามแผน:</b> 13.89 บาท/หุ้น<br>
+    ✅ <b>ผลการซื้อคืนจริง:</b> ซื้อไปได้ทั้งหมด <b>90.99%</b> (65,530,400 หุ้น) | มูลค่ารวม <b>996.45 ล้านบาท</b> | ราคาเฉลี่ยที่ซื้อจริง: <b>15.21 บาท/หุ้น</b><br>
+    📈 <b>เปรียบเทียบกับแผน:</b> ราคาเฉลี่ยซื้อจริงสูงกว่าราคาเฉลี่ยตามแผนเล็กน้อย เนื่องจากราคาหุ้นในตลาดวิ่งขึ้นไปยืนเหนือโซน 15-16 บาทในช่วงกลางโครงการ
+  </div>
+
+  <div class="info-box day-box">
+    🚀 <b>ราคาหลังประกาศซื้อหุ้นคืน (10 ต.ค. 2566):</b> Open = <b>14.20 บาท</b> (<span class="down">ลบ 1 ช่อง</span>) | High = <b>14.30 บาท</b> | Low = <b>13.90 บาท</b> | Close = <b>14.00 บาท</b>
+  </div>
+
+  <div class="grid">
+    <div class="kpi up">
+      <div class="label">High (8 พ.ย. 2566)</div>
+      <div class="value up">16.30 บาท</div>
+      <div class="chg up">▲ +13.99% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 30 Days</div>
+    </div>
+    <div class="kpi down">
+      <div class="label">Low (19 ต.ค. 2566)</div>
+      <div class="value down">13.90 บาท</div>
+      <div class="chg down">▼ -2.80% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 10 Days</div>
+    </div>
+    <div class="kpi up">
+      <div class="label">วันสุดท้ายของการซื้อหุ้นคืน</div>
+      <div class="value up">14.90 บาท</div>
+      <div class="chg up">▲ +4.20% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 98 Days</div>
+    </div>
+  </div>
+
+  <div class="chart-shell"><div class="chart-container"><canvas id="chart1"></canvas></div></div>
+
+  <div class="info-box earn-box">
+    📊 <b>เหตุการณ์สำคัญและผลการดำเนินงาน (รอบที่ 1):</b><br>
+    • <b>วันขึ้นเครื่องหมาย XD:</b> <i>(ไม่มีการจ่ายปันผลระหว่างกาลในรอบนี้)</i><br>
+    • <b>ประกาศงบ Q3/2566 (10 พ.ย. 2566 หลังตลาดปิด):</b> กำไรสุทธิ <b>ลดลง -27% YoY</b> (เพราะปีก่อนมีกำไรพิเศษขายหุ้น SF)<br>
+    • <b>ราคาหุ้นวันถัดไปหลังประกาศงบ (13 พ.ย. 2566):</b> Open = 15.60 | High = 15.70 | Low = 15.50 | Close = 15.60 บาท (ทรงตัวในกรอบแคบ)
+  </div>
+
+  <ul class="hl">
+    <li><b>วันแรกหลังประกาศซื้อหุ้นคืน:</b> เปิดที่ 14.20 บาท (ลดลง 1 ช่อง) ก่อนย่อตัวทำ Low 13.90 บาท</li>
+    <li>ราคาหุ้นพุ่งขึ้นทำ High ที่ 16.30 บาท (+13.99%) ในเวลา 30 วันหลังประกาศ</li>
+    <li>วันสุดท้ายของโครงการปิดที่ 14.90 บาท (+4.20%) เหนือราคาฐาน</li>
+  </ul>
+</section>
+
+<!-- ROUND 2 -->
+<section class="panel round-2 reveal d2">
+  <div class="panel-head">
+    <div class="round-badge">2</div>
+    <div class="panel-title">รอบที่ 2<small>MAJOR Share Buyback Program</small></div>
+    <div class="date-chips">
+      <span class="chip"><b>📅 ประกาศ:</b> <span>16 ก.ค. 2567</span></span>
+      <span class="chip"><b>🏁 ครบกำหนด:</b> <span>15 ม.ค. 2568</span></span>
+    </div>
+  </div>
+
+  <div class="base-price">🏷️ ราคาปิดฐาน (วันประกาศ 16 ก.ค. 2567): <b>12.40 บาท</b></div>
+
+  <div class="info-box plan-box">
+    📋 <b>แผนโครงการ:</b> ซื้อคืนไม่เกิน 76.8 ล้านหุ้น | วงเงินไม่เกิน 1,000 ล้านบาท | <b>ราคาเฉลี่ยตามแผน:</b> 13.02 บาท/หุ้น<br>
+    ✅ <b>ผลการซื้อคืนจริง:</b> ซื้อไปได้ทั้งหมด <b>92.73%</b> (71,218,800 หุ้น) | มูลค่ารวม <b>998.20 ล้านบาท</b> | ราคาเฉลี่ยที่ซื้อจริง: <b>14.02 บาท/หุ้น</b><br>
+    📈 <b>เปรียบเทียบกับแผน:</b> ราคาเฉลี่ยซื้อจริงสูงกว่าราคาเฉลี่ยตามแผนเล็กน้อย เนื่องจากบริษัททยอยซื้อหุ้นในช่วงที่ราคาตลาดปรับตัวสูงขึ้นไปทำ High กว่า 15 บาท
+  </div>
+
+  <div class="info-box day-box">
+    🚀 <b>ราคาหลังประกาศซื้อหุ้นคืน (18 ก.ค. 2567*):</b> Open = <b>12.50 บาท</b> (<span class="up">บวก 1 ช่อง</span>) | High = <b>12.60 บาท</b> | Low = <b>12.40 บาท</b> | Close = <b>12.40 บาท</b> *(17 ก.ค. วันหยุด)
+  </div>
+
+  <div class="grid">
+    <div class="kpi up">
+      <div class="label">High (21 ต.ค. 2567)</div>
+      <div class="value up">15.70 บาท</div>
+      <div class="chg up">▲ +26.61% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 97 Days</div>
+    </div>
+    <div class="kpi down">
+      <div class="label">Low (23 ก.ค. 2567)</div>
+      <div class="value down">12.10 บาท</div>
+      <div class="chg down">▼ -2.42% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 5 Days</div>
+    </div>
+    <div class="kpi up">
+      <div class="label">วันสุดท้ายของการซื้อหุ้นคืน</div>
+      <div class="value up">14.20 บาท</div>
+      <div class="chg up">▲ +14.52% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 183 Days</div>
+    </div>
+  </div>
+
+  <div class="chart-shell"><div class="chart-container"><canvas id="chart2"></canvas></div></div>
+
+  <div class="info-box earn-box">
+    📊 <b>เหตุการณ์สำคัญและผลการดำเนินงาน (รอบที่ 2):</b><br>
+    • <b>วันขึ้นเครื่องหมาย XD (26 ส.ค. 2567):</b> จ่ายปันผลระหว่างกาล <b>0.25 บาท/หุ้น</b> (ราคาปิดวัน XD อยู่ที่ 13.90 บาท)<br>
+    • <b>ประกาศงบ Q2/2567 (14 ส.ค. 2567 หลังตลาดปิด):</b> กำไรสุทธิ <b>ลดลง -56% YoY</b> เหลือ 232 ลบ. (เพราะปีก่อนมีกำไรขายหุ้น M PICTURES)<br>
+    • <b>ราคาหุ้นวันถัดไปหลังประกาศงบ (15 ส.ค. 2567):</b> Open = 13.50 | High = 13.70 | Low = 13.50 | Close = 13.60 บาท (ราคาขยับบวกสวนทางกำไรพาดหัว)
+  </div>
+
+  <ul class="hl">
+    <li><b>วันแรกหลังประกาศซื้อหุ้นคืน:</b> เปิดที่ 12.50 บาท (บวก 1 ช่อง) ก่อนย่อทำ Low ที่ 12.10 บาท (-2.42%)</li>
+    <li>ราคาพุ่งทำ High สูงสุดถึง +26.61% (15.70 บาท) ในช่วงปลายเดือน ต.ค. 2567</li>
+    <li>วันสุดท้ายของโครงการปิดที่ 14.20 บาท (+14.52%)</li>
+  </ul>
+</section>
+
+<!-- ROUND 3 -->
+<section class="panel round-3 reveal d3">
+  <div class="panel-head">
+    <div class="round-badge">3</div>
+    <div class="panel-title">รอบที่ 3<small>MAJOR Share Buyback Program</small></div>
+    <div class="date-chips">
+      <span class="chip"><b>📅 ประกาศ:</b> <span>11 พ.ย. 2568</span></span>
+      <span class="chip"><b>🏁 ครบกำหนด:</b> <span>15 ม.ค. 2569</span></span>
+    </div>
+  </div>
+
+  <div class="base-price">🏷️ ราคาปิดฐาน (วันประกาศ 11 พ.ย. 2568): <b>6.40 บาท</b></div>
+
+  <div class="info-box plan-box">
+    📋 <b>แผนโครงการ:</b> ซื้อคืนไม่เกิน 75.7 ล้านหุ้น | วงเงินไม่เกิน 600 ล้านบาท | <b>ราคาเฉลี่ยตามแผน:</b> 7.93 บาท/หุ้น<br>
+    ✅ <b>ผลการซื้อคืนจริง:</b> ซื้อไปได้ทั้งหมด <b>99.96%</b> (75,670,000 หุ้น) | มูลค่ารวม <b>544.39 ล้านบาท</b> | ราคาเฉลี่ยที่ซื้อจริง: <b>7.19 บาท/หุ้น</b><br>
+    📈 <b>เปรียบเทียบกับแผน:</b> ราคาเฉลี่ยซื้อจริงต่ำกว่าราคาเฉลี่ยตามแผน แสดงถึงความสำเร็จในการบริหารต้นทุน โดยบริษัทสามารถทยอยซื้อหุ้นคืนเกือบครบ 100% ได้ในโซนราคาต่ำช่วงต้นโครงการ
+  </div>
+
+  <div class="info-box day-box">
+    🚀 <b>ราคาหลังประกาศซื้อหุ้นคืน (12 พ.ย. 2568):</b> Open = <b>7.00 บาท</b> (<span class="up">บวก 6 ช่อง</span>) | High = <b>7.10 บาท</b> | Low = <b>6.90 บาท</b> | Close = <b>7.05 บาท</b>
+  </div>
+
+  <div class="grid">
+    <div class="kpi up">
+      <div class="label">High (24 ก.พ. 2569)</div>
+      <div class="value up">8.20 บาท</div>
+      <div class="chg up">▲ +28.13% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 105 Days</div>
+    </div>
+    <div class="kpi flat">
+      <div class="label">Low (วันประกาศ / ช่วงแรก)</div>
+      <div class="value flat">6.40 - 6.50 บาท</div>
+      <div class="chg flat">➡ +0.00% ~ +1.56% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 0 Days (Lowest)</div>
+    </div>
+    <div class="kpi up">
+      <div class="label">วันสุดท้ายของการซื้อหุ้นคืน</div>
+      <div class="value up">7.40 บาท</div>
+      <div class="chg up">▲ +15.63% <small>vs ราคาประกาศ</small></div>
+      <div class="sub2">Time : 185 Days</div>
+    </div>
+  </div>
+
+  <div class="chart-shell"><div class="chart-container"><canvas id="chart3"></canvas></div></div>
+
+  <div class="info-box earn-box">
+    📊 <b>เหตุการณ์สำคัญและผลการดำเนินงาน (รอบที่ 3):</b><br>
+    • <b>วันขึ้นเครื่องหมาย XD (29 เม.ย. 2569):</b> จ่ายปันผล <b>0.15 บาท/หุ้น</b> (ราคาปิดวัน XD อยู่ที่ 6.80 บาท)<br>
+    • <b>ประกาศงบ Q3/2568 (11 พ.ย. 2568 วันเดียวกับวันประกาศซื้อหุ้นคืนพอดี!):</b> กำไรสุทธิ <b>พุ่งกระฉูด +151% YoY</b> แตะ 126.32 ลบ.<br>
+    • <b>ราคาหุ้นวันถัดไปหลังประกาศงบ/ซื้อคืน (12 พ.ย. 2568):</b> Open = 7.00 | High = 7.10 | Low = 6.90 | Close = 7.05 บาท (ตลาดตอบรับเชิงบวกทันที ราคาเปิดกระโดดพุ่งขึ้น +9.38%)
+  </div>
+
+  <ul class="hl">
+    <li><b>วันแรกหลังประกาศ (ซื้อหุ้นคืนพร้อมงบออก):</b> ตลาดตอบรับแรงมากเพราะงบโตเด่น +151% YoY ราคาเปิดกระโดดขึ้นทันทีที่ 7.00 บาท (+9.38%)</li>
+    <li>ราคาไต่ขึ้นต่อเนื่องทำ High สูงสุดที่ +28.13% (8.20 บาท) ในช่วงปลายเดือน ก.พ. 2569</li>
+    <li>วันสุดท้ายของโครงการปิดที่ 7.40 บาท (+15.63%)</li>
+  </ul>
+</section>
+
+<!-- SUMMARY -->
+<section class="summary reveal d3">
+  <h2>📌 สรุปภาพรวมและไฮไลท์ทั้ง 3 รอบ</h2>
+  <p>ทุกรอบการประกาศซื้อหุ้นคืนของ MAJOR ราคาหุ้นมีการตอบสนองในทิศทางบวกอย่างชัดเจน โดย<b>ราคาหุ้นขึ้นไปทำจุดสูงสุด (High) +13.99% ถึง +28.13%</b> เหนือราคาวันประกาศทุกรอบ และเมื่อถึงวันสุดท้ายของการซื้อหุ้นคืน ราคาปิดก็ยังคงสูงกว่าวันประกาศเสมอ (+4.20% ถึง +15.63%) โดยในรอบที่ 3 มีปัจจัยหนุนจากผลประกอบการที่ประกาศออกมาเติบโตสูงถึง +151% YoY ทำให้ตลาดตอบรับในวันแรกชัดเจนที่สุด (Open โดดขึ้น +9.38%) และสนับสนุนสมมติฐานขาขึ้นได้สมบูรณ์ที่สุด</p>
+</section>
+
+</div>
+
+<script>
+const eventLabelsPlugin = {
+  id: 'eventLabelsPlugin',
+  afterDatasetsDraw(chart) {
+    const {ctx, scales: {x, y}} = chart;
+    const meta = chart.getDatasetMeta(0);
+    if (!chart.config.data.events) return;
+    ctx.save();
+    ctx.font = 'bold 11px Inter, "Segoe UI", Tahoma, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    chart.config.data.events.forEach(ev => {
+      const index = chart.data.labels.indexOf(ev.date);
+      if (index !== -1 && meta.data[index]) {
+        const pt = meta.data[index];
+        const xCoord = pt.x;
+        const yCoord = pt.y - 10;
+        const text = ev.text;
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillStyle = ev.bg || 'rgba(2, 6, 23, 0.92)';
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(xCoord - textWidth/2 - 7, yCoord - 17, textWidth + 14, 21, 6);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        } else {
+          ctx.fillRect(xCoord - textWidth/2 - 7, yCoord - 17, textWidth + 14, 21);
+        }
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(text, xCoord, yCoord - 4);
+      }
+    });
+    ctx.restore();
+  }
+};
+
+const charts = [];
+const baseOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {mode: 'index', intersect: false},
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(2, 6, 23, 0.95)',
+      borderColor: 'rgba(148,163,184,0.25)',
+      borderWidth: 1,
+      titleFont: { size: 13, weight: '700' },
+      bodyFont: { size: 13 },
+      padding: 12,
+      cornerRadius: 10,
+      callbacks: { label: ctx => ' ราคาปิด: ' + ctx.parsed.y.toFixed(2) + ' บาท' }
+    }
+  },
+  scales: {
+    x: { ticks: { color: '#7c8db0', font: { size: 10.5 }, maxTicksLimit: 12, maxRotation: 0 }, grid: { color: 'rgba(148,163,184,0.07)' }, border: { color: 'rgba(148,163,184,0.15)' } },
+    y: { ticks: { color: '#7c8db0', font: { size: 11 } }, grid: { color: 'rgba(148,163,184,0.07)' }, border: { color: 'rgba(148,163,184,0.15)' } }
+  }
+};
+
+const labels1 = ["9-Oct-23","10-Oct-23","11-Oct-23","12-Oct-23","16-Oct-23","17-Oct-23","18-Oct-23","19-Oct-23","20-Oct-23","24-Oct-23","25-Oct-23","26-Oct-23","27-Oct-23","30-Oct-23","31-Oct-23","1-Nov-23","2-Nov-23","3-Nov-23","6-Nov-23","7-Nov-23","8-Nov-23","9-Nov-23","10-Nov-23","13-Nov-23","14-Nov-23","15-Nov-23","16-Nov-23","17-Nov-23","20-Nov-23","21-Nov-23","22-Nov-23","23-Nov-23","24-Nov-23","27-Nov-23","28-Nov-23","29-Nov-23","30-Nov-23","1-Dec-23","4-Dec-23","6-Dec-23","7-Dec-23","8-Dec-23","12-Dec-23","13-Dec-23","14-Dec-23","15-Dec-23","18-Dec-23","19-Dec-23","20-Dec-23","21-Dec-23","22-Dec-23","25-Dec-23","26-Dec-23","27-Dec-23","28-Dec-23","3-Jan-24","4-Jan-24","5-Jan-24","8-Jan-24","9-Jan-24","10-Jan-24","11-Jan-24","12-Jan-24","15-Jan-24"];
+const data1 = [14.3,14,14.3,14.3,14.2,14.1,14.1,13.9,14.1,14.4,14.4,14,14.6,15.2,15.2,15.2,15.4,15.8,15.9,16.1,16.3,16.1,16,15.6,15.6,16,15.7,15.8,15.9,15.7,15.7,16,15.7,15.4,15.7,15.6,15.2,15.3,15.4,15.3,15.1,15.1,14.8,14.3,14.5,14.6,14.7,14.8,15.2,15.3,15.1,15.2,15.2,15.1,14.9,15.3,15,14.9,14.6,14.7,14.9,14.6,14.7,14.9];
+const events1 = [
+  {date: "9-Oct-23", text: "ประกาศซื้อหุ้นคืน", bg: "#dc2626"},
+  {date: "19-Oct-23", text: "Low (13.90)", bg: "#d97706"},
+  {date: "8-Nov-23", text: "High (16.30)", bg: "#16a34a"},
+  {date: "10-Nov-23", text: "ประกาศงบ Q3/66", bg: "#ca8a04"},
+  {date: "15-Jan-24", text: "วันสุดท้ายโครงการ", bg: "#2563eb"}
+];
+
+charts.push(new Chart(document.getElementById('chart1'), {
+  type:'line',
+  data:{
+    labels: labels1,
+    datasets:[{
+      label:'ราคาปิด',
+      data: data1,
+      borderColor:'#a78bfa',
+      backgroundColor:'rgba(139,92,246,0.14)',
+      fill:true,
+      tension:0.3,
+      borderWidth:2.5,
+      pointRadius: labels1.map(d => events1.some(e => e.date === d) ? 5.5 : 0),
+      pointHoverRadius: 7,
+      pointBackgroundColor: labels1.map(d => {
+        const ev = events1.find(e => e.date === d);
+        return ev ? ev.bg : '#a78bfa';
+      }),
+      pointBorderColor: 'rgba(255,255,255,0.9)',
+      pointBorderWidth: 2
+    }],
+    events: events1
+  },
+  options: baseOptions,
+  plugins: [eventLabelsPlugin]
+}));
+
+const labels2 = ["16-Jul-24","18-Jul-24","19-Jul-24","23-Jul-24","24-Jul-24","25-Jul-24","26-Jul-24","31-Jul-24","1-Aug-24","5-Aug-24","6-Aug-24","7-Aug-24","9-Aug-24","13-Aug-24","14-Aug-24","15-Aug-24","16-Aug-24","20-Aug-24","21-Aug-24","23-Aug-24","26-Aug-24","27-Aug-24","28-Aug-24","29-Aug-24","30-Aug-24","5-Sep-24","6-Sep-24","10-Sep-24","11-Sep-24","12-Sep-24","13-Sep-24","17-Sep-24","19-Sep-24","23-Sep-24","24-Sep-24","25-Sep-24","26-Sep-24","30-Sep-24","1-Oct-24","2-Oct-24","3-Oct-24","7-Oct-24","8-Oct-24","9-Oct-24","10-Oct-24","11-Oct-24","15-Oct-24","17-Oct-24","18-Oct-24","21-Oct-24","24-Oct-24","28-Oct-24","30-Oct-24","31-Oct-24","1-Nov-24","4-Nov-24","5-Nov-24","6-Nov-24","7-Nov-24","8-Nov-24","11-Nov-24","12-Nov-24","13-Nov-24","14-Nov-24","15-Nov-24","18-Nov-24","19-Nov-24","20-Nov-24","21-Nov-24","22-Nov-24","25-Nov-24","26-Nov-24","27-Nov-24","28-Nov-24","29-Nov-24","2-Dec-24","3-Dec-24","4-Dec-24","6-Dec-24","9-Dec-24","11-Dec-24","12-Dec-24","13-Dec-24","16-Dec-24","17-Dec-24","18-Dec-24","19-Dec-24","20-Dec-24","23-Dec-24","24-Dec-24","25-Dec-24","26-Dec-24","27-Dec-24","30-Dec-24","2-Jan-25","3-Jan-25","6-Jan-25","7-Jan-25","8-Jan-25","9-Jan-25","10-Jan-25","13-Jan-25","14-Jan-25","15-Jan-25"];
+const data2 = [12.4,12.4,12.2,12.1,12.5,12.7,12.8,13.2,13.6,13.5,13.4,13.6,13.5,13.3,13.6,13.6,14,13.6,13.8,13.9,13.9,14.1,14.4,14.6,14.3,14.7,15.1,15.2,15.2,15.1,15.2,15.2,15.4,15.3,15.4,15.4,15,14.9,15.1,15,14.9,15.3,15,15.2,15.3,15.3,15.3,15.3,15.5,15.7,15.4,15,14.9,14.8,14.5,14.3,14.1,14,14.1,13.9,14.1,13.7,14.4,14.5,14.7,14.6,14.8,14.8,14.6,14.6,14.5,14.5,14.5,14.5,14.5,14.8,14.8,14.9,14.9,14.9,14.7,14.7,14.8,14.8,14.4,14.5,14.9,14.9,14.7,14.8,14.7,14.5,14.6,14.1,14.7,14.7,14.3,14.2,14.1,14,14.2];
+const events2 = [
+  {date: "16-Jul-24", text: "ประกาศซื้อหุ้นคืน", bg: "#dc2626"},
+  {date: "23-Jul-24", text: "Low (12.10)", bg: "#d97706"},
+  {date: "14-Aug-24", text: "ประกาศงบ Q2/67", bg: "#ca8a04"},
+  {date: "26-Aug-24", text: "XD (0.25฿)", bg: "#ec4899"},
+  {date: "21-Oct-24", text: "High (15.70)", bg: "#16a34a"},
+  {date: "15-Jan-25", text: "วันสุดท้ายโครงการ", bg: "#2563eb"}
+];
+
+charts.push(new Chart(document.getElementById('chart2'), {
+  type:'line',
+  data:{
+    labels: labels2,
+    datasets:[{
+      label:'ราคาปิด',
+      data: data2,
+      borderColor:'#fb923c',
+      backgroundColor:'rgba(249,115,22,0.13)',
+      fill:true,
+      tension:0.3,
+      borderWidth:2.5,
+      pointRadius: labels2.map(d => events2.some(e => e.date === d) ? 5.5 : 0),
+      pointHoverRadius: 7,
+      pointBackgroundColor: labels2.map(d => {
+        const ev = events2.find(e => e.date === d);
+        return ev ? ev.bg : '#fb923c';
+      }),
+      pointBorderColor: 'rgba(255,255,255,0.9)',
+      pointBorderWidth: 2
+    }],
+    events: events2
+  },
+  options: baseOptions,
+  plugins: [eventLabelsPlugin]
+}));
+
+const labels3 = ["11-Nov-25","12-Nov-25","13-Nov-25","14-Nov-25","17-Nov-25","18-Nov-25","19-Nov-25","20-Nov-25","21-Nov-25","24-Nov-25","25-Nov-25","26-Nov-25","27-Nov-25","28-Nov-25","1-Dec-25","2-Dec-25","3-Dec-25","4-Dec-25","8-Dec-25","9-Dec-25","11-Dec-25","12-Dec-25","15-Dec-25","16-Dec-25","17-Dec-25","18-Dec-25","19-Dec-25","22-Dec-25","23-Dec-25","24-Dec-25","25-Dec-25","26-Dec-25","29-Dec-25","30-Dec-25","5-Jan-26","6-Jan-26","7-Jan-26","8-Jan-26","9-Jan-26","12-Jan-26","13-Jan-26","14-Jan-26","15-Jan-26","16-Jan-26","19-Jan-26","20-Jan-26","21-Jan-26","22-Jan-26","23-Jan-26","26-Jan-26","27-Jan-26","28-Jan-26","29-Jan-26","30-Jan-26","2-Feb-26","3-Feb-26","4-Feb-26","5-Feb-26","6-Feb-26","9-Feb-26","10-Feb-26","11-Feb-26","12-Feb-26","13-Feb-26","16-Feb-26","17-Feb-26","18-Feb-26","19-Feb-26","20-Feb-26","23-Feb-26","24-Feb-26","25-Feb-26","26-Feb-26","27-Feb-26","2-Mar-26","4-Mar-26","5-Mar-26","6-Mar-26","9-Mar-26","10-Mar-26","11-Mar-26","12-Mar-26","13-Mar-26","16-Mar-26","17-Mar-26","18-Mar-26","19-Mar-26","20-Mar-26","23-Mar-26","24-Mar-26","25-Mar-26","26-Mar-26","27-Mar-26","30-Mar-26","31-Mar-26","1-Apr-26","2-Apr-26","3-Apr-26","7-Apr-26","8-Apr-26","9-Apr-26","10-Apr-26","16-Apr-26","17-Apr-26","20-Apr-26","21-Apr-26","22-Apr-26","23-Apr-26","24-Apr-26","27-Apr-26","28-Apr-26","29-Apr-26","30-Apr-26","5-May-26","6-May-26","7-May-26","8-May-26","11-May-26","12-May-26","13-May-26","14-May-26","15-May-26"];
+const data3 = [6.4,7.05,7.1,7.15,7.15,7.05,7.1,7,6.75,6.65,6.6,6.6,6.85,6.85,6.7,6.8,6.65,6.6,6.55,6.5,6.5,6.95,6.9,6.55,7,6.8,6.85,6.95,6.9,7.05,6.95,6.95,7,7.1,6.95,7.1,7.1,6.95,6.9,6.9,6.95,6.8,7,7,7.05,7,6.95,6.8,6.65,6.55,6.65,6.65,6.65,6.6,6.6,6.8,6.8,7,6.95,7.1,7,7.25,7.45,7.35,7.4,7.35,7.55,7.65,7.45,7.85,8.2,8.15,8.05,8,7.85,7.85,7.85,8,7.9,8.15,8,7.85,7.65,7.7,7.65,7.6,7.6,7.25,7.2,7.15,7.45,7.35,7.25,7.15,7.25,7.5,7.5,7.6,7.8,8,8,8.1,8,7.65,7.55,7.4,7.2,7.15,7.2,6.95,6.95,6.8,6.7,6.5,6.8,6.7,6.9,7.5,7.35,7.45,7.6,7.4];
+const events3 = [
+  {date: "11-Nov-25", text: "ประกาศซื้อคืน+งบ Q3", bg: "#dc2626"},
+  {date: "24-Feb-26", text: "High (8.20)", bg: "#16a34a"},
+  {date: "29-Apr-26", text: "XD (0.15฿)", bg: "#ec4899"},
+  {date: "15-May-26", text: "วันสุดท้ายโครงการ", bg: "#2563eb"}
+];
+
+charts.push(new Chart(document.getElementById('chart3'), {
+  type:'line',
+  data:{
+    labels: labels3,
+    datasets:[{
+      label:'ราคาปิด',
+      data: data3,
+      borderColor:'#38bdf8',
+      backgroundColor:'rgba(14,165,233,0.13)',
+      fill:true,
+      tension:0.3,
+      borderWidth:2.5,
+      pointRadius: labels3.map(d => events3.some(e => e.date === d) ? 5.5 : 0),
+      pointHoverRadius: 7,
+      pointBackgroundColor: labels3.map(d => {
+        const ev = events3.find(e => e.date === d);
+        return ev ? ev.bg : '#38bdf8';
+      }),
+      pointBorderColor: 'rgba(255,255,255,0.9)',
+      pointBorderWidth: 2
+    }],
+    events: events3
+  },
+  options: baseOptions,
+  plugins: [eventLabelsPlugin]
+}));
+
+/* ===== Theme switching ===== */
+function applyChartTheme(){
+  const light = document.body.classList.contains('light');
+  const tick   = light ? '#64748b' : '#7c8db0';
+  const grid   = light ? 'rgba(15,23,42,.08)' : 'rgba(148,163,184,.07)';
+  const border = light ? 'rgba(15,23,42,.15)' : 'rgba(148,163,184,.15)';
+  charts.forEach(c => {
+    c.options.scales.x.ticks.color = tick;
+    c.options.scales.y.ticks.color = tick;
+    c.options.scales.x.grid.color = grid;
+    c.options.scales.y.grid.color = grid;
+    c.options.scales.x.border.color = border;
+    c.options.scales.y.border.color = border;
+    c.options.plugins.tooltip.backgroundColor = light ? 'rgba(255,255,255,.97)' : 'rgba(2,6,23,.95)';
+    c.options.plugins.tooltip.titleColor = light ? '#0f172a' : '#fff';
+    c.options.plugins.tooltip.bodyColor  = light ? '#1e293b' : '#e2e8f0';
+    c.options.plugins.tooltip.borderColor = border;
+    c.update();
+  });
+}
+function setTheme(light){
+  document.body.classList.toggle('light', light);
+  try{ localStorage.setItem('mc-theme', light ? 'light' : 'dark'); }catch(e){}
+  document.getElementById('themeBtn').textContent = light ? '☀️ Light' : '🌙 Dark';
+  applyChartTheme();
+}
+function toggleTheme(){ setTheme(!document.body.classList.contains('light')); }
+let savedTheme = null;
+try{ savedTheme = localStorage.getItem('mc-theme'); }catch(e){}
+setTheme(savedTheme === 'light');
+</script>
+</body>
+</html>
